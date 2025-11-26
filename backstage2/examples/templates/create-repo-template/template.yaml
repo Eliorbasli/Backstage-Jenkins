@@ -1,0 +1,124 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-repository
+  title: Create Git Repository
+  description: Create a new Git repository on GitHub, GitLab, or Bitbucket
+  tags:
+    - repository
+    - git
+    - github
+    - gitlab
+    - bitbucket
+spec:
+  owner: guests
+  type: service
+  
+  parameters:
+    - title: Repository Information
+      required:
+        - repoName
+        - provider
+      properties:
+        repoName:
+          title: Repository Name
+          type: string
+          description: Name of the new repository
+          pattern: '^[a-zA-Z0-9_-]+$'
+          ui:autofocus: true
+          ui:help: Use lowercase letters, numbers, hyphens, and underscores only
+        
+        description:
+          title: Description
+          type: string
+          description: A short description of your repository (optional)
+          ui:help: This will appear on your repository page
+        
+        provider:
+          title: Git Provider
+          type: string
+          description: Choose where to create the repository
+          enum:
+            - github
+            - gitlab
+            - bitbucket
+          enumNames:
+            - GitHub
+            - GitLab
+            - Bitbucket
+          default: github
+        
+        visibility:
+          title: Repository Visibility
+          type: string
+          description: Should the repository be public or private?
+          enum:
+            - public
+            - private
+          enumNames:
+            - Public
+            - Private
+          default: public
+
+  steps:
+    - id: fetch-base
+      name: Prepare Repository Content
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          repoName: ${{ parameters.repoName }}
+          description: ${{ parameters.description }}
+
+    - id: publish-github
+      name: Create GitHub Repository
+      if: ${{ parameters.provider === 'github' }}
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=${{ user.entity.metadata.name }}&repo=${{ parameters.repoName }}
+        description: ${{ parameters.description }}
+        repoVisibility: ${{ parameters.visibility }}
+        defaultBranch: main
+
+    - id: publish-gitlab
+      name: Create GitLab Repository
+      if: ${{ parameters.provider === 'gitlab' }}
+      action: publish:gitlab
+      input:
+        repoUrl: gitlab.com?owner=${{ user.entity.metadata.name }}&repo=${{ parameters.repoName }}
+        description: ${{ parameters.description }}
+        repoVisibility: ${{ parameters.visibility }}
+
+    - id: publish-bitbucket
+      name: Create Bitbucket Repository
+      if: ${{ parameters.provider === 'bitbucket' }}
+      action: publish:bitbucket
+      input:
+        repoUrl: bitbucket.org?owner=${{ user.entity.metadata.name }}&repo=${{ parameters.repoName }}
+        description: ${{ parameters.description }}
+
+  output:
+    links:
+      - title: View Repository
+        url: ${{ steps['publish-github'].output.remoteUrl || steps['publish-gitlab'].output.remoteUrl || steps['publish-bitbucket'].output.remoteUrl }}
+      - title: Open in Backstage
+        icon: catalog
+        entityRef: ${{ steps['publish-github'].output.catalogInfoUrl || steps['publish-gitlab'].output.catalogInfoUrl || steps['publish-bitbucket'].output.catalogInfoUrl }}
+    text:
+      - title: Repository Created Successfully!
+        content: |
+          Your new repository has been created!
+          
+          **Repository Name:** ${{ parameters.repoName }}
+          **Description:** ${{ parameters.description || 'No description provided' }}
+          **Provider:** ${{ parameters.provider }}
+          **Visibility:** ${{ parameters.visibility }}
+          
+          The repository includes a README.md file with your repository name as the title.
+      - title: Next Steps
+        content: |
+          1. Clone the repository to your local machine
+          2. Start adding your code
+          3. Push your changes
+          
+          Repository URL: ${{ steps['publish-github'].output.remoteUrl || steps['publish-gitlab'].output.remoteUrl || steps['publish-bitbucket'].output.remoteUrl }}

@@ -1,0 +1,70 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-application
+  title: Deploy Application
+  description: Deploy an application to different environments using Jenkins
+  tags:
+    - deployment
+    - jenkins
+    - docker
+spec:
+  owner: guests
+  type: service
+  
+  parameters:
+    - title: Deployment Configuration
+      required:
+        - environment
+        - imageTag
+      properties:
+        environment:
+          title: Target Environment
+          type: string
+          description: Select the environment to deploy to
+          enum:
+            - dev
+            - staging
+            - prod
+          enumNames:
+            - Development
+            - Staging
+            - Production
+          default: dev
+          ui:autofocus: true
+          ui:help: Choose the target deployment environment
+        
+        imageTag:
+          title: Image Version/Tag
+          type: string
+          description: Docker image tag to deploy (e.g., latest, alpine, 1.25)
+          default: latest
+          ui:help: Specify the nginx image version you want to deploy
+
+  steps:
+    - id: trigger-jenkins
+      name: Trigger Jenkins Deployment
+      action: jenkins:job:trigger
+      input:
+        jobName: deploy-application
+        parameters:
+          ENVIRONMENT: ${{ parameters.environment }}
+          IMAGE_TAG: ${{ parameters.imageTag }}
+
+  output:
+    text:
+      - title: Deployment Started
+        content: |
+          Deployment job triggered successfully!
+          
+          **Environment:** ${{ parameters.environment }}
+          **Image Tag:** ${{ parameters.imageTag }}
+          
+          The Jenkins job is now running. You can monitor it in Jenkins.
+      - title: Next Steps
+        content: |
+          1. Check Jenkins for deployment status: http://localhost:8080/job/deploy-application/
+          2. Once complete, access your application at:
+             - Dev: http://localhost:8081
+             - Staging: http://localhost:8082
+             - Prod: http://localhost:8083

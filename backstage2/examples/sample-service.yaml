@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: sample-service
+  description: A sample service to test Jenkins integration
+  annotations:
+    jenkins.io/job-full-name: sample-build-job
+spec:
+  type: service
+  lifecycle: production
+  owner: guests
